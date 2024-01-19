@@ -1,7 +1,7 @@
 rm(list=ls())
 args <- commandArgs(trailingOnly = TRUE)
 #filename <- args[1]
-filename="GSS3049.expected_count.newID"
+filename="GSS3049.expected_count.newID2"
 A <- read.table(filename, header = TRUE,  sep="\t")
 
 #cnts=read.csv(filename,sep='\t')
@@ -12,18 +12,21 @@ B=A[1:d[1], 3:d[2]]
 #C=B+ZZ
 Cname=colnames(B)
 Clen=length(Cname) ##there are 3 annotation columns
+CID=rep("NA", Clen)
 Chem=rep("NA", Clen)
 Dose=rep("NA",Clen)
 ChemDose=rep("NA", Clen)
-SeqID=rep("NA", Clen)
+dupID=rep("NA", Clen)
 splitname<-strsplit(Cname, "[.]")
 for(mm in  1:Clen ){
+  CID[mm]=splitname[[mm]][1]
   Chem[mm]=splitname[[mm]][2]
   Dose[mm]=splitname[[mm]][3]
-  SeqID[mm]=splitname[[mm]][4]
+  dupID[mm]=splitname[[mm]][4]
 }
-ChemDose=paste0(Chem, Dose)
-geneID=Paste0(A[,1],"|", A[,2])
+ChemDose=paste0(CID, ".", Chem, Dose)
+SeqID=paste0(CID, ".", dupID)
+geneID=A[,1]
 
 samplenames <- Cname
 
@@ -32,13 +35,15 @@ samplenames=paste0(ChemDose, ".", SeqID)
 cnts = B
 colnames(cnts)=samplenames
 rownames(cnts)=geneID
-meta<- data.frame(matrix("NA",nrow=length(samplenames), ncol=5))
-colnames(meta)=c("ID","Chem", "Dose","ChemDose", "dup")
+meta<- data.frame(matrix("NA",nrow=length(samplenames), ncol=6))
+colnames(meta)=c("ID","Chem", "Dose","CID", "ChemDose", "dup")
 meta$ID=samplenames
 meta$Chem=Chem
 meta$Dose=Dose
 meta$ChemDose=ChemDose
 meta$dup=SeqID
+meta$CID=CID
+
 ###########################################
 library("DESeq2")
 y=round(cnts)
@@ -161,7 +166,7 @@ ggplot(pcaData, aes(x = PC1, y = PC2, color = ChemDose)) +
   geom_text(size =8, label=SeqID) +
   xlab(paste0("PC1: ", percentVar[1], "% variance")) +
   ylab(paste0("PC2: ", percentVar[2], "% variance")) +
-  coord_fixed()+theme_bw()+
+  coord_fixed()+theme_bw()+theme(legend.text = element_text(size = 18))+
   ggtitle("PCA with VST data")
 dev.off()
 
@@ -174,19 +179,45 @@ geom_text(size =8, label=SeqID) +
   ylab(paste0("PC2: ", percentVar[2], "% variance")) +
   coord_fixed()+theme_bw()+
   stat_chull(aes(color=ChemDose, fill=ChemDose), alpha=0.1, geom="polygon")+
-  ggtitle("PCA with VST data")
+  ggtitle("PCA with VST data")+theme(legend.text = element_text(size = 18))
+dev.off()
+########################Daw PC1 Data ##########################
+# Sort the data frame by PC1 in ascending order
+sorted_df <- pcaData[order(pcaData$PC1), ]
+
+# Create a bar plot of PC1
+jpeg('PC1_BarPlot.jpg', width = 385, height = 700)
+
+library(ggplot2)
+
+ggplot(sorted_df, aes(y = reorder(row.names(sorted_df), PC1), x = PC1)) +
+  geom_bar(stat = "identity", fill = "aquamarine") +
+  ylab("") +
+  xlab("PC1") +
+  ggtitle("PC1 Bar Plot (Sorted)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
 dev.off()
 
-################################################
-#devtools::install_github("willtownes/glmpca")
-####################################################
-library("glmpca")
-gpca <- glmpca(counts(dds), L=2)
-gpca.dat <- gpca$factors
-jpeg('PCA4.jpg',width=1285, height=900 )
-ggplot(gpca.dat, aes(x = dim1, y = dim2, color = group)) +
-  geom_text(size =8, label=SeqID) + coord_fixed() + ggtitle("glmpca - Generalized PCA")+theme_bw()
+
+sorted_df2 <- pcaData[order(pcaData$PC2), ]
+
+# Create a bar plot of PC1
+jpeg('PC2_BarPlot.jpg', width = 385, height = 700)
+
+library(ggplot2)
+
+ggplot(sorted_df2, aes(y = reorder(row.names(sorted_df2), PC2), x = PC2)) +
+  geom_bar(stat = "identity", fill = "aquamarine") +
+  ylab("") +
+  xlab("PC2") +
+  ggtitle("PC2 Bar Plot (Sorted)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
 dev.off()
+
 
 
 ################################################
@@ -196,14 +227,14 @@ mds <- as.data.frame(colData(vsd))  %>%
          cbind(cmdscale(sampleDistMatrix))
 jpeg('MDS.jpg',width=1285, height=900)
 ggplot(mds, aes(x = `1`, y = `2`, color = ChemDose)) +theme_bw()+
-geom_text(size = 8, label=SeqID) + coord_fixed()+ ggtitle("MDS with VST data")
+geom_text(size = 8, label=SeqID) + coord_fixed()+ ggtitle("MDS with VST data")+theme(legend.text = element_text(size = 18))
 dev.off()
 ####################################################
 mdsPois <- as.data.frame(colData(dds)) %>%
    cbind(cmdscale(samplePoisDistMatrix))
 jpeg('MDS2.jpg',width=1285, height=900)
 ggplot(mdsPois, aes(x = `1`, y = `2`, color = ChemDose)) +theme_bw()+
-geom_text(size = 8, label=SeqID) + coord_fixed()+ ggtitle("MDS with PoissonDistances")
+geom_text(size = 8, label=SeqID) + coord_fixed()+ ggtitle("MDS with PoissonDistances")+theme(legend.text = element_text(size = 18))
 dev.off()
 
 
