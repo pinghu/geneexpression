@@ -1,0 +1,94 @@
+---
+title: "gage_baby"
+author: "Ping hu"
+date: "10/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R GAGE Library check
+https://www.r-bloggers.com/2015/12/tutorial-rna-seq-differential-expression-pathway-analysis-with-sailfish-deseq2-gage-and-pathview/
+
+```{r readCsv}
+data <- read.csv(file = 'bj1080.11.bj.txt.stat')
+head(data)
+require('AnnotationDbi')
+require("BiocGenerics")
+require("parallel")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("hgu219.db")
+
+chip='hgu219'
+cmd=paste('library(',chip,'.db)',sep='')  
+eval(parse(text=cmd))
+
+colnames(data)[1]='probe_id'
+cmd=paste('egids2=', chip,'ENTREZID[data$probe_id]',sep='')
+eval(parse(text=cmd))
+annots=toTable(egids2)
+total <- merge(data,annots,by="probe_id")
+
+library(dplyr)
+x<- total %>% group_by(gene_id) %>% filter(p_values == min(p_values)) 
+remove(total)
+remove(data)
+```
+
+## Run gage
+```{r gage, echo=FALSE}
+
+library(pathview)
+library(gage)
+library(gageData)
+data(kegg.sets.hs)
+data(sigmet.idx.hs)
+kegg.sets.hs = kegg.sets.hs[sigmet.idx.hs]
+head(kegg.sets.hs, 3)
+
+
+Sig<-x[x$p_values <=0.05,]
+foldchanges=Sig$FoldChange
+names(foldchanges)=Sig$gene_id
+
+
+keggres = gage(foldchanges, gsets=kegg.sets.hs, same.dir=TRUE)
+lapply(keggres, head)
+write.table(keggres, file="test.kegg.txt",sep="\t")
+
+# pull out the top 5 upregulated pathways, then further process that just to get the IDs. We’ll use these KEGG pathway IDs downstream for plotting.
+keggrespathways = data.frame(id=rownames(keggres$greater), keggres$greater) %>% 
+  tbl_df() %>% 
+  filter(row_number()<=5) %>% 
+  .$id %>% 
+  as.character()
+keggrespathways  
+
+keggresids = substr(keggrespathways, start=1, stop=8)
+keggresids
+###plot a pathway
+pathview(gene.data=foldchanges, pathway.id="hsa04310", species="hsa")
+
+### get GO data
+data(go.sets.hs)
+data(go.subs.hs)
+gobpsets = go.sets.hs[go.subs.hs$BP]
+gobpres = gage(foldchanges, gsets=gobpsets, same.dir=TRUE)
+lapply(gobpres, head)
+write.table(gobpres, file="test.gobp.txt",sep="\t")
+
+goccsets = go.sets.hs[go.subs.hs$CC]
+goccres = gage(foldchanges, gsets=goccsets, same.dir=TRUE)
+write.table(goccres, file="test.gocc.txt",sep="\t")
+
+gomfsets = go.sets.hs[go.subs.hs$MF]
+gomfres = gage(foldchanges, gsets=gomfsets, same.dir=TRUE)
+write.table(gomfres, file="test.gomf.txt",sep="\t")
+
+```
+
