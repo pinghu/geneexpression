@@ -6,6 +6,7 @@ library(NMF)
 library(geosphere)
 library(ggplot2)
 library(Rtsne)
+library(fields) # Make sure to install it if you haven't already
 drawSortedBarPlot <- function(testData, filename) {
   # Ensure testData is a data frame
   if (!is.data.frame(testData)) {
@@ -66,10 +67,12 @@ print(args)
 file <- args[1]
 target_row_name <- args[2]
 rm(args)
-file <- "petro.count1.5.xingtaoLFCDirection"
-target_row_name <- "direction.A1.G2218Petrolatum.01P"
+#file <- "petro.count1.5.xingtaoLFCDirection"
+#target_row_name <- "direction.A1.G2218Petrolatum.01P"
 #file <- "test_data"
 #target_row_name <- "LFC_T_3_vs_V1"
+#file="GSS3049_xingtao_LFC.unhealthySkinSignatureDirection"
+#target_row_name <- "direction.T2.TNFa.10ng_ml"
 outname=paste0(file, ".", target_row_name, ".nmf_rank")
 
 A <- read.table(file, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
@@ -89,6 +92,7 @@ reference_point <- W_matrix[row_index, ]
 distance_dict <- list()
 for (i in 1:dim(data_matrix)[1]) {
   myDist<-distm (W_matrix[i,], W_matrix[row_index,], fun = distGeo)
+  #myDist <- rdist(as.matrix(W_matrix[i,, drop = FALSE]), as.matrix(reference_point))
   myName=rownames(data_matrix)[i]
   distance_dict[[myName]] <- myDist
 }
@@ -107,6 +111,7 @@ reference_point <- result$rotation[row_index,1:2]
 distance_dict <- list()
 for (i in 1:dim(data_matrix)[2]) {
   myDist<-distm (result$rotation[i,1:2], reference_point, fun = distGeo)
+  #myDist <- rdist(as.matrix(result$rotation[i,1:2, drop = FALSE]), as.matrix(reference_point))
   myName=colnames(data_matrix)[i]
   distance_dict[[myName]] <- myDist
 }
@@ -123,9 +128,12 @@ result <- Rtsne(data_matrix, dims = 2, perplexity = 5)
 row_index <- which(rownames(data_matrix) == target_row_name)
 reference_point <- result$Y[row_index, ]
 distance_dict <- list()
+
 for (i in 1:dim(data_matrix)[1]) {
-  myDist<-distm (result$Y[i,], result$Y[row_index,], fun = distGeo)
-  myName=rownames(data_matrix)[i]
+  #myDist<-distm (result$Y[i,], result$Y[row_index,], fun = distGeo)
+  # Calculate Euclidean distance instead of geographical distance
+  myDist <- rdist(as.matrix(result$Y[i, , drop = FALSE]), as.matrix(result$Y[row_index, , drop = FALSE]))
+  myName = rownames(data_matrix)[i]
   distance_dict[[myName]] <- myDist
 }
 tsne_similarityScore=calculateSimilarityScores(distance_dict)
@@ -133,6 +141,7 @@ myResult=cbind(rownames(data_matrix),unlist(distance_dict), tsne_similarityScore
 colnames(myResult)=c("Sample", "Distance", "similarityScore")
 #write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
 drawSortedBarPlot(myResult, outname)
+
 ###########################################Combine average the ranking score#####################
 scores_matrix <- cbind(pca_similarityScore, nmf_similarityScore, tsne_similarityScore)
 scores_mean <- rowMeans(scores_matrix, na.rm = TRUE)  # na.rm=TRUE to remove any NA values in the calculation
