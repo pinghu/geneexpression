@@ -5,6 +5,7 @@ library(bigmemory)
 library(NMF)
 library(geosphere)
 library(ggplot2)
+library(Rtsne)
 drawSortedBarPlot <- function(testData, filename) {
   # Ensure testData is a data frame
   if (!is.data.frame(testData)) {
@@ -30,7 +31,7 @@ drawSortedBarPlot <- function(testData, filename) {
     geom_bar(stat = "identity", fill = "blue") +
     ylab(filename) +
     xlab("Similarity Score") +
-    ggtitle(filename) +
+    ggtitle("Rank") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size = 12))
   
@@ -74,34 +75,61 @@ d <- dim(A)
 heatmap_data <- A[, 3:d[2]]
 row_names <- A[, 1]
 row.names(heatmap_data) <- A[, 1]
-ZZ=as.numeric(min(heatmap_data))
 
+######## Part 1 NMF Ranking #########
+outname=paste0(file, ".", target_row_name, ".nmf_rank")
+ZZ=as.numeric(min(heatmap_data))
 data_matrix <- as.matrix(t(heatmap_data)) -ZZ+1
 result <- nmf(data_matrix, rank = 2) # Change rank as needed
-
 W_matrix <- basis(result)
-
 row_index <- which(rownames(data_matrix) == target_row_name)
 reference_point <- W_matrix[row_index, ]
-
 distance_dict <- list()
 for (i in 1:dim(data_matrix)[1]) {
   myDist<-distm (W_matrix[i,], W_matrix[row_index,], fun = distGeo)
   myName=rownames(data_matrix)[i]
   distance_dict[[myName]] <- myDist
 }
-similarityScore=calculateSimilarityScores(distance_dict )
-#tt<-data.matrix(similarityScore)
-myResult=cbind(rownames(data_matrix), unlist(distance_dict), similarityScore )
+nmf_similarityScore=calculateSimilarityScores(distance_dict )
+myResult=cbind(rownames(data_matrix), unlist(distance_dict), nmf_similarityScore )
 colnames(myResult)=c("Sample", "Distance", "similarityScore")
 write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
-#write.table(similarityScore, file="test.txt", sep="\t", row.names=TRUE)
-
-
 drawSortedBarPlot(myResult, paste0(outname))
 
+#######Part2 PCA Ranking ##########################
+outname=paste0(file, ".", target_row_name, ".pca_rank")
+data_matrix <- as.matrix(heatmap_data)
+result <- prcomp(data_matrix, center = TRUE, scale. = TRUE)
+row_index <- which(colnames(data_matrix) == target_row_name)
+reference_point <- result$rotation[row_index,1:2]
+distance_dict <- list()
+for (i in 1:dim(data_matrix)[2]) {
+  myDist<-distm (result$rotation[i,1:2], reference_point, fun = distGeo)
+  myName=colnames(data_matrix)[i]
+  distance_dict[[myName]] <- myDist
+}
+pca_similarityScore=calculateSimilarityScores(distance_dict)
+myResult=cbind(colnames(data_matrix),unlist(distance_dict), pca_similarityScore )
+colnames(myResult)=c("Sample", "Distance", "similarityScore")
+write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
+drawSortedBarPlot(myResult, paste0(outname))
 
-
-
+################Part 3 TSNE Ranking ##################################
+outname=paste0(file, ".", target_row_name, ".tsne_rank")
+data_matrix <- as.matrix(t(heatmap_data))
+result <- Rtsne(data_matrix, dims = 2, perplexity = 5)
+row_index <- which(rownames(data_matrix) == target_row_name)
+reference_point <- result$Y[row_index, ]
+distance_dict <- list()
+for (i in 1:dim(data_matrix)[1]) {
+  myDist<-distm (result$Y[i,], result$Y[row_index,], fun = distGeo)
+  myName=rownames(data_matrix)[i]
+  distance_dict[[myName]] <- myDist
+}
+tsne_similarityScore=calculateSimilarityScores(distance_dict)
+myResult=cbind(rownames(data_matrix),unlist(distance_dict), tsne_similarityScore )
+colnames(myResult)=c("Sample", "Distance", "similarityScore")
+write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
+drawSortedBarPlot(myResult, paste0(outname))
 
 
