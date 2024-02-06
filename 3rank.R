@@ -25,10 +25,13 @@ drawSortedBarPlot <- function(testData, filename) {
     warning("NAs introduced by coercion to numeric in similarityScore")
   }
   
-  sorted_df <- testData[order(testData$similarityScore),]
-  
+  color_vector<- ifelse(grepl("etro",testData$Sample), "blue",
+                         ifelse(grepl("SLS|TNF|Geraniol",testData$Sample), "red", "steelblue"))
+  testData$Col =color_vector
+
+  sorted_df <- testData[order(testData$similarityScore), ]
   p <- ggplot(sorted_df, aes(y = reorder(Sample, similarityScore), x = similarityScore)) +
-    geom_bar(stat = "identity", fill = "blue") +
+    geom_bar(stat = "identity", fill = sorted_df$Col) +
     ylab(filename) +
     xlab("Similarity Score") +
     ggtitle("Rank") +
