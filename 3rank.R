@@ -67,11 +67,10 @@ file <- args[1]
 target_row_name <- args[2]
 rm(args)
 file <- "petro.count1.5.xingtaoLFCDirection"
-target_row_name <- "direction.LFC_A1_V1"
+target_row_name <- "direction.A1.G2218Petrolatum.01P"
 #file <- "test_data"
 #target_row_name <- "LFC_T_3_vs_V1"
 outname=paste0(file, ".", target_row_name, ".nmf_rank")
-
 
 A <- read.table(file, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 d <- dim(A)
@@ -97,7 +96,7 @@ nmf_similarityScore=calculateSimilarityScores(distance_dict )
 myResult=cbind(rownames(data_matrix), unlist(distance_dict), nmf_similarityScore )
 colnames(myResult)=c("Sample", "Distance", "similarityScore")
 #write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
-drawSortedBarPlot(myResult, paste0(outname))
+drawSortedBarPlot(myResult, outname)
 
 #######Part2 PCA Ranking ##########################
 outname=paste0(file, ".", target_row_name, ".pca_rank")
@@ -115,7 +114,7 @@ pca_similarityScore=calculateSimilarityScores(distance_dict)
 myResult=cbind(colnames(data_matrix),unlist(distance_dict), pca_similarityScore )
 colnames(myResult)=c("Sample", "Distance", "similarityScore")
 #write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
-drawSortedBarPlot(myResult, paste0(outname))
+drawSortedBarPlot(myResult, outname)
 
 ################Part 3 TSNE Ranking ##################################
 outname=paste0(file, ".", target_row_name, ".tsne_rank")
@@ -133,7 +132,7 @@ tsne_similarityScore=calculateSimilarityScores(distance_dict)
 myResult=cbind(rownames(data_matrix),unlist(distance_dict), tsne_similarityScore )
 colnames(myResult)=c("Sample", "Distance", "similarityScore")
 #write.table(myResult, file = outname, sep = "\t", row.names = FALSE)
-drawSortedBarPlot(myResult, paste0(outname))
+drawSortedBarPlot(myResult, outname)
 ###########################################Combine average the ranking score#####################
 scores_matrix <- cbind(pca_similarityScore, nmf_similarityScore, tsne_similarityScore)
 scores_mean <- rowMeans(scores_matrix, na.rm = TRUE)  # na.rm=TRUE to remove any NA values in the calculation
