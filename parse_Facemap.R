@@ -6,21 +6,21 @@ library(ggplot2)
 args <- commandArgs(trailingOnly = TRUE)
 
 # The first argument is the Excel file path
-#excel_path <- args[1]
-#output_file_path <- args[2]
-#q_filter <- args[3]
-excel_path <- "FMap_TNF4071TK_oldCMP-2024_02_14_1723.xlsx"
-output_file_path <- "FMap_TNF4071TK_oldCMP"
+excel_path <- args[1]
+output_file_path <- args[2]
+q_filter <- args[3] # if it is NA, then no more filter
+#excel_path <- "FMap_TNF4071TK_oldCMP-2024_02_14_1723.xlsx"
+#output_file_path <- "FMap_TNF4071TK_oldCMP"
+#q_filter <- "CMP424"
+
 data <- read_excel(excel_path, sheet = "TKC")
-q_filter <- "CMP424"
-# Filter rows where column Q equals the q_filter value and select the specified columns
 filtered_data <- data %>%
   filter(cell == "tert keratinocytes") %>%
   select(Score, chem, Report.Name, STID,cell, Conc, batches, chips)
 # Write the filtered data to a tab-delimited text file
 #write.table(filtered_data, paste0(output_file_path, ".all.txt"), sep = "\t", row.names = TRUE, quote = FALSE)
 write.xlsx(filtered_data, paste0(output_file_path, ".xlsx"))
-# The third argument is the text filter for column Q
+
 if(q_filter != "NA"){
   small_data <- filtered_data %>%
   filter(batches == q_filter)%>%
@@ -49,7 +49,3 @@ if(q_filter != "NA"){
   
 }
 
-
-
-# Notify the user that the file has been written
-cat("The filtered data has been written to", output_file_path, "\n")
