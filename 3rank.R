@@ -41,9 +41,22 @@ drawSortedBarPlot <- function(testData, filename) {
   
   # Save the plot as a JPEG image file
   filename_with_extension <- paste0(filename, ".jpg")
-  jpeg(filename_with_extension, width = 285, height = 600)
+  jpeg(filename_with_extension, width = 285, height = 380)
   print(p)
   dev.off()
+  
+  # Use rank with ties.method = "min" to handle scores that are the same
+  sorted_df$order <- rank(sorted_df$similarityScore, ties.method = "min")
+  
+  # Specify your desired output file name
+  output_tab_delimited_file <- paste0(filename, ".rank")
+  
+  # Write the specific columns to a tab-delimited text file
+  write.table(sorted_df[, c("Sample", "order", "similarityScore")], 
+              file = output_tab_delimited_file, 
+              sep = "\t", 
+              row.names = FALSE, 
+              col.names = TRUE)
 }
 
 calculateSimilarityScores <- function(distance_dict) {
