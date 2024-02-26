@@ -55,7 +55,7 @@ perform_gene_enrichment_analysis <- function(gene_symbols, outname) {
     
     # Add a column to indicate the database for reference in the combined file
     filtered_results$Database <- db
-    jpeg(filename = paste0(outname, ".", db, ".jpg"), width = 300, height = 300)  # Adjust size as neede
+    jpeg(filename = paste0(outname, ".", db, ".jpg"), width = 480, height = 300)  # Adjust size as neede
     p<-plotEnrich(filtered_results, showTerms = 20, numChar = 40, y = "Count", orderBy = "P.value")
     print(p)
     dev.off()
