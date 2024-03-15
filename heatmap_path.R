@@ -5,8 +5,8 @@ outname="P00540_LPS"
 A<-read.table(filename,header=TRUE, sep="\t",stringsAsFactors=F)
 d<-dim(A)
 lfc <- A[, 2:17]
-rownames(lfc) <- paste0(A[, 68],".", A[,71], ".",A[,1])
-
+#rownames(lfc) <- paste0(A[, 68],".", A[,71], ".",A[,1])
+rownames(lfc) <- paste0( A[,71], ".",A[,1])
 # Remove ".lfc" from column names
 colnames(lfc) <- sub("\\.lfc$", "", colnames(lfc))
 p <- A[,19:34]
@@ -31,15 +31,17 @@ col_avg <- colMeans(data)
 #data <- pmin(pmax(data, -3), 3)
 library(circlize)
 #color_scale = colorRamp2(c(-2, 0, 2), c("green", "white", "red"))
-color_scale = colorRamp2(c(-2, 0, 2), c("blue", "#EEEEEE", "red"))
+#color_scale = colorRamp2(c(-2, 0, 2), c("blue", "#EEEEEE", "red"))
+color_scale = colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
 #color_scale <- colorRamp2(c(max(data),0, min(data)), c("red","white", "blue"))
 row_ha <- rowAnnotation(LFC = anno_barplot(row_avg))
 column_ha <- HeatmapAnnotation( LFC= anno_barplot(col_avg))
-
+bacteria <-as.factor(A[, 68])
 ht_list<-Heatmap(data, name = "LogFoldChange", top_annotation = column_ha, 
                  left_annotation = row_ha,  row_names_gp = gpar(fontsize = 7),
                  cluster_rows = FALSE, cluster_columns  = FALSE,
-                 rect_gp = gpar(col = "white", lwd = 2),
+                 #rect_gp = gpar(col = "white", lwd = 2),
+                 row_split =bacteria,
                  cell_fun = function(j, i, x, y, w, h, col) { # add text to each grid
                    grid.text(p_mat[i, j], x, y)
                  },
@@ -63,4 +65,20 @@ dev.off()
 # }
 # clustering_distance_rows = robust_dist,
 # clustering_distance_columns = robust_dist,
-
+#group = kmeans(t(mat), centers = 3)$cluster
+#cluster_columns = cluster_within_group(mat, group)
+#cluster_within_group(data, bacteria),
+#row_names_gp = gpar(col = )
+#row_names_centered = TRUE, column_names_centered = TRUE
+#column_names_rot = 45,
+# row_names_max_width = max_text_width(
+#   rownames(mat2), 
+#   gp = gpar(fontsize = 12)
+# )
+# row_labels = row_labels[rownames(mat)], 
+# column_labels = column_labels[colnames(mat)]
+# row_labels = expression(alpha, beta, gamma, 
+#                         delta, epsilon, zeta, eta, theta, iota, kappa, lambda, mu, nu, xi, 
+#                         omicron, pi, rho, sigma)
+# row_labels = gt_render(letters[1:18], padding = unit(c(2, 10, 2, 10), "pt")),
+# row_names_gp = gpar(box_col = rep(c("red", "green"), times = 9))
